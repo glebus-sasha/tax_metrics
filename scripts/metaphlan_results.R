@@ -6,7 +6,7 @@ suppressPackageStartupMessages({
 
 # metaphlan_file <- 'data/sample_0.txt'
 # output_file <- 'taxonomy.csv'
-
+ 
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 2) {
