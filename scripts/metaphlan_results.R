@@ -4,9 +4,9 @@ suppressPackageStartupMessages({
   library(tidyverse)
 })
 
-# metaphlan_file <- 'data/sample_0.txt'
-# output_file <- 'taxonomy.csv'
- 
+# metaphlan_file <- 'raw/sample_single_profile.txt'
+# output_file <- 'results/sample_single_taxonomy.csv'
+
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 2) {
@@ -20,12 +20,12 @@ output_file <- args[2]
 metaphlan <- read_tsv(
   metaphlan_file,
   comment = "#",
-  col_names = c("clade_name", "NCBI_tax_id", "relative_abundance", "additional_species"),
+  col_names = c("clade_name", "clade_taxid", "relative_abundance", "coverage", "estimated_number_of_reads_from_the_clade"),
   col_types = cols(.default = "c")
 ) %>%
   mutate(relative_abundance = as.numeric(relative_abundance)) %>%
   filter(str_detect(clade_name, "t__")) %>%
-  select(clade_name, relative_abundance) %>%
+  select(clade_name, estimated_number_of_reads_from_the_clade, relative_abundance) %>%
   arrange(-relative_abundance) %>%
   separate(
     clade_name,
@@ -47,7 +47,8 @@ metaphlan <- read_tsv(
     Вид = species,
     SGB = sgb,
     `Относительное содержание` = relative_abundance
-  )
+  ) %>% 
+  select(-SGB)
 
 write_csv2(metaphlan, output_file)
 
