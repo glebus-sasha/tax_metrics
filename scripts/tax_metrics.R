@@ -12,7 +12,7 @@ suppressPackageStartupMessages({
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 2) {
-  stop("Usage: Rscript alpha_div.R <input_file.csv> <output_file.csv>")
+  stop("Usage: Rscript tax_metrics.R <input_file.csv> <output_file.csv>")
 }
 
 bracken_file <- args[1]
