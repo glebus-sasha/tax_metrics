@@ -46,10 +46,13 @@ metaphlan <- read_tsv(
     Род = genus,
     Вид = species,
     SGB = sgb,
+    `Количество прочтений` = estimated_number_of_reads_from_the_clade,
     `Относительное содержание` = relative_abundance
   ) %>% 
-  select(-SGB)
+  select(-SGB) %>% 
+  filter(`Относительное содержание` > 0.01) %>% 
+  arrange(desc(`Относительное содержание`))
 
-write_csv2(metaphlan, output_file)
+write_excel_csv2(metaphlan, output_file)
 
 cat("Written to:", output_file, "\n")

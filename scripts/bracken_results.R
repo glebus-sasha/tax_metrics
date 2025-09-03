@@ -57,12 +57,10 @@ processed_data <- kreport_data %>%
     genus = map_chr(taxonomy_path, ~extract_taxon_level(.x, "g")),
     species = map_chr(taxonomy_path, ~extract_taxon_level(.x, "s"))
   ) %>%
-  # Оставляем только строки с видами (s__) или SGB (t__)
   filter(!is.na(species)) %>%
-  # Вычисляем общее количество прочтений для расчета относительного содержания
+  filter(species != "Homo_sapiens") %>% 
   mutate(total_reads = sum(reads_count)) %>%
   mutate(relative_abundance = (reads_count / total_reads) * 100) %>%
-  # Выбираем и переименовываем колонки
   select(
     Царство = kingdom,
     Тип = phylum,
@@ -74,13 +72,12 @@ processed_data <- kreport_data %>%
     `Количество прочтений` = reads_count,
     `Относительное содержание` = relative_abundance
   ) %>%
-  # Заменяем NA на пустые строки
   mutate(across(everything(), ~replace_na(.x, ""))) %>%
-  # Сортируем по убыванию относительного содержания
+  filter(`Относительное содержание` > 0.01) %>% 
   arrange(desc(`Относительное содержание`))
 
 # Сохраняем результат
-write_csv2(processed_data, output_file)
+write_excel_csv2(processed_data, output_file)
 
 cat("Written to:", output_file, "\n")
 cat("Total rows processed:", nrow(processed_data), "\n")
