@@ -15,7 +15,7 @@ if (length(args) != 2) {
   stop("Usage: Rscript tax_metrics.R <input_file.csv> <output_file.csv>")
 }
 
-bracken_file <- args[1]
+taxonomy_file <- args[1]
 output_file <- args[2]
 
 taxonomy_df <- read_csv2(taxonomy_file) 
