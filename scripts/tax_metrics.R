@@ -6,17 +6,17 @@ suppressPackageStartupMessages({
   library(jsonlite)
 })
 
-# taxonomy_file <- 'results/sample_0_taxonomy.csv'
-# output_file <- 'results/sample_0_alpha.json'
+taxonomy_file <- 'results/sample_0_taxonomy.csv'
+output_file <- 'results/sample_0_alpha.json'
 
-args <- commandArgs(trailingOnly = TRUE)
-
-if (length(args) != 2) {
-  stop("Usage: Rscript tax_metrics.R <input_file.csv> <output_file.csv>")
-}
-
-taxonomy_file <- args[1]
-output_file <- args[2]
+# args <- commandArgs(trailingOnly = TRUE)
+# 
+# if (length(args) != 2) {
+#   stop("Usage: Rscript tax_metrics.R <input_file.csv> <output_file.csv>")
+# }
+# 
+# taxonomy_file <- args[1]
+# output_file <- args[2]
 
 taxonomy_df <- read_csv2(taxonomy_file) 
 
@@ -147,7 +147,8 @@ alpha_df <- tibble(
 )
 
 # Сохраняем
-write_json(alpha_df, output_file, pretty = TRUE)
+alpha_list <- as.list(alpha_df[1, ])
+write_json(alpha_list, output_file, pretty = TRUE)
 
 cat("Written to:", output_file, "\n")
 cat("Энтеротип:", entero_type, "\n")
