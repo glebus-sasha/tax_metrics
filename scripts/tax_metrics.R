@@ -6,17 +6,17 @@ suppressPackageStartupMessages({
   library(jsonlite)
 })
 
-taxonomy_file <- 'results/sample_0_taxonomy.csv'
-output_file <- 'results/sample_0_alpha.json'
+# taxonomy_file <- 'results/sample_0_taxonomy.csv'
+# output_file <- 'results/sample_0_alpha.json'
 
-# args <- commandArgs(trailingOnly = TRUE)
-# 
-# if (length(args) != 2) {
-#   stop("Usage: Rscript tax_metrics.R <input_file.csv> <output_file.csv>")
-# }
-# 
-# taxonomy_file <- args[1]
-# output_file <- args[2]
+args <- commandArgs(trailingOnly = TRUE)
+
+if (length(args) != 2) {
+  stop("Usage: Rscript tax_metrics.R <input_file.csv> <output_file.csv>")
+}
+
+taxonomy_file <- args[1]
+output_file <- args[2]
 
 taxonomy_df <- read_csv2(taxonomy_file) 
 
