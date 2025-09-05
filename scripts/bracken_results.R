@@ -70,11 +70,11 @@ processed_data <- kreport_data %>%
     Род = genus,
     Вид = species,
     `Количество прочтений` = reads_count,
-    `Относительное содержание` = relative_abundance
+    `Относительное содержание, %` = relative_abundance
   ) %>%
   mutate(across(everything(), ~replace_na(.x, ""))) %>%
-  filter(`Относительное содержание` > 0.01) %>% 
-  arrange(desc(`Относительное содержание`))
+  filter(`Относительное содержание, %` > 0.01) %>% 
+  arrange(desc(`Относительное содержание, %`))
 
 # Сохраняем результат
 write_excel_csv2(processed_data, output_file)
