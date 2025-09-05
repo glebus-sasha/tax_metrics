@@ -37,7 +37,8 @@ metaphlan <- read_tsv(
   )) %>%
   mutate(
     total_filtered_abundance = sum(relative_abundance),
-    relative_abundance = (relative_abundance / total_filtered_abundance) * 100
+    relative_abundance = (relative_abundance / total_filtered_abundance) * 100,
+    relative_abundance = round(relative_abundance, 3)
   ) %>% 
   rename(
     Царство = kingdom,
@@ -49,11 +50,11 @@ metaphlan <- read_tsv(
     Вид = species,
     SGB = sgb,
     `Количество прочтений` = estimated_number_of_reads_from_the_clade,
-    `Относительное содержание, %` = relative_abundance
+    `Относительное содержание %` = relative_abundance
   ) %>% 
   select(-SGB, -total_filtered_abundance) %>% 
-  filter(`Относительное содержание, %` > 0.01) %>% 
-  arrange(desc(`Относительное содержание, %`))
+  filter(`Относительное содержание %` > 0.01) %>% 
+  arrange(desc(`Относительное содержание %`))
 
 write_excel_csv2(metaphlan, output_file)
 
