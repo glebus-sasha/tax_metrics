@@ -24,7 +24,8 @@ metaphlan <- read_tsv(
 ) %>%
   mutate(estimated_number_of_reads_from_the_clade = as.numeric(estimated_number_of_reads_from_the_clade)) %>%
   filter(str_detect(clade_name, "t__")) %>%
-  select(clade_name, estimated_number_of_reads_from_the_clade, relative_abundance) %>%
+  mutate(clade_taxid = str_extract(clade_taxid, "[0-9]+(?=\\|?$)")) %>% 
+  select(clade_taxid, clade_name, estimated_number_of_reads_from_the_clade, relative_abundance) %>%
   separate(
     clade_name,
     into = c("kingdom", "phylum", "class", "order", "family", "genus", "species", "sgb"),
@@ -41,6 +42,7 @@ metaphlan <- read_tsv(
     relative_abundance = round(relative_abundance, 3)
   ) %>% 
   rename(
+    taxonomy_id = clade_taxid,
     Царство = kingdom,
     Тип = phylum,
     Класс = class,
