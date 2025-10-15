@@ -1,0 +1,127 @@
+---
+title: "taxpasta_taxmetrics"
+format: html
+---
+
+```{r}
+#| message: true
+#| warning: false
+library(tidyverse)
+library(yardstick)
+```
+
+```{r}
+# Функция для нормализации (приведение к относительной abundance)
+normalize_columns <- function(df) {
+  df %>%
+    mutate(across(-c(taxonomy_id, name), 
+                  ~ .x / sum(.x, na.rm = TRUE) * 100))
+}
+```
+
+
+```{r}
+truth_file <- '../raw/taxpasta/truth.tsv'
+test_file <- '../raw/taxpasta/bracken_db1.tsv'
+```
+
+```{r}
+truth <- read_delim(truth_file, delim = "\t", escape_double = FALSE, trim_ws = TRUE) %>% 
+  normalize_columns() %>%
+  rename_with(~ ifelse(.x == "taxonomy_id",
+                    .x,
+                    str_replace(.x, "^([^_]+_[^_]+_[^_]+_[^_]+).*", "\\1")),
+            .cols = everything()) %>% 
+  pivot_longer(cols = -c(taxonomy_id, name),
+               names_to = "sample",
+               values_to = "abundance")
+test <- read_delim(test_file, delim = "\t", escape_double = FALSE, trim_ws = TRUE) %>%
+  rename_with(~ ifelse(.x == "taxonomy_id",
+                    .x,
+                    str_replace(.x, "^([^_]+_[^_]+_[^_]+_[^_]+).*", "\\1")),
+            .cols = everything()) %>% 
+  normalize_columns() %>%
+  pivot_longer(cols = -c(taxonomy_id, name),
+               names_to = "sample",
+               values_to = "abundance")
+```
+
+```{r}
+combined_data <- truth %>% full_join(test, 
+             by = c("taxonomy_id", "name", "sample"),
+             suffix = c("_truth", "_test")) %>% 
+  mutate(
+    abundance_truth =  case_when(!is.na(abundance_truth) ~ abundance_truth,
+          TRUE ~ 0
+      ),
+        abundance_test =  case_when(!is.na(abundance_test) ~ abundance_test,
+          TRUE ~ 0
+      ),
+      presence_truth = as.factor(case_when(
+          abundance_truth > 0 ~ 1,
+          TRUE ~ 0
+      )),
+      presence_test = as.factor(case_when(
+          abundance_test > 0 ~ 1,
+          TRUE ~ 0
+      ))
+  )
+```
+
+
+```{r}
+binary_metrics <- combined_data %>% 
+  group_by(sample) %>%
+      summarise(
+      # Базовые счетчики
+      tp = sum(presence_truth == 1 & presence_test == 1),
+      tn = sum(presence_truth == 0 & presence_test == 0),
+      fp = sum(presence_truth == 0 & presence_test == 1),
+      fn = sum(presence_truth == 1 & presence_test == 0),
+      total = n(),
+      
+      # Accuracy (всегда можно посчитать)
+      accuracy = (tp + tn) / total,
+      
+      # Precision (только если есть предсказанные положительные)
+      precision = ifelse((tp + fp) > 0, tp / (tp + fp), NA_real_),
+      
+      # Recall (только если есть настоящие положительные)
+      recall = ifelse((tp + fn) > 0, tp / (tp + fn), NA_real_),
+      
+      # F1-score (только если можно посчитать и precision и recall)
+      f1 = ifelse(!is.na(precision) & !is.na(recall) & (precision + recall) > 0,
+                  2 * (precision * recall) / (precision + recall), NA_real_),
+      
+      # Specificity (только если есть настоящие отрицательные)
+      specificity = ifelse((tn + fp) > 0, tn / (tn + fp), NA_real_),
+      
+      .groups = 'drop'
+    )
+```
+
+```{r}
+distance_metrics <- combined_data %>%
+  group_by(sample) %>%
+  summarise(
+    # Bray-Curtis (самая популярная в метагеномике)
+    bray_curtis = 1 - (2 * sum(pmin(abundance_truth, abundance_test)) / 
+                        (sum(abundance_truth) + sum(abundance_test))),
+    
+    # Jaccard (для presence/absence с abundance)
+    jaccard = sum(pmin(abundance_truth, abundance_test)) / 
+              sum(pmax(abundance_truth, abundance_test)),
+    
+    # Cosine similarity
+    cosine = sum(abundance_truth * abundance_test) / 
+             (sqrt(sum(abundance_truth^2)) * sqrt(sum(abundance_test^2))),
+    
+    # Manhattan distance
+    manhattan = sum(abs(abundance_truth - abundance_test)),
+    
+    # Euclidean distance
+    euclidean = sqrt(sum((abundance_truth - abundance_test)^2)),
+    
+    .groups = 'drop'
+  )
+```
