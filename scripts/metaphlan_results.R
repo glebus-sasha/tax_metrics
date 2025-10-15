@@ -4,17 +4,17 @@ suppressPackageStartupMessages({
   library(tidyverse)
 })
 
-metaphlan_file <- 'raw/250822_RnD-L_250822_21_Metagenom1_n17K_L00_profile.txt'
-output_file <- 'results/250822_RnD-L_250822_21_Metagenom1_n17K_L00_taxonomy.csv'
+# metaphlan_file <- 'raw/250822_RnD-L_250822_21_Metagenom1_n17K_L00_profile.txt'
+# output_file <- 'results/250822_RnD-L_250822_21_Metagenom1_n17K_L00_taxonomy.csv'
 
-# args <- commandArgs(trailingOnly = TRUE)
-# 
-# if (length(args) != 2) {
-#   stop("Usage: Rscript metaphlan_results.R <metaphlan_file.tsv> <output_file.csv>")
-# }
-# 
-# metaphlan_file <- args[1]
-# output_file <- args[2]
+args <- commandArgs(trailingOnly = TRUE)
+
+if (length(args) != 2) {
+  stop("Usage: Rscript metaphlan_results.R <metaphlan_file.tsv> <output_file.csv>")
+}
+
+metaphlan_file <- args[1]
+output_file <- args[2]
 
 metaphlan <- read_tsv(
   metaphlan_file,
