@@ -6,13 +6,13 @@ suppressPackageStartupMessages({
   library(jsonlite)
 })
 
-# taxonomy_file <- 'results/sample_0_taxonomy.csv'
+# taxonomy_file <- 'results/250822_RnD-L_250822_21_Metagenom1_n17K_L00_taxonomy.csv'
 # output_file <- 'results/sample_0_alpha.json'
 
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 2) {
-  stop("Usage: Rscript tax_metrics.R <input_file.csv> <output_file.csv>")
+  stop("Usage: Rscript tax_metrics.R <input_file.csv> <output_file.json>")
 }
 
 taxonomy_file <- args[1]
@@ -33,12 +33,12 @@ genus_count <- taxonomy_df %>%
 # Расчет соотношений бактерий
 # 1. Соотношение Bacillota/Bacteroidota (типы)
 firmicutes_count <- taxonomy_df %>%
-  filter(Тип == "Bacillota" | Тип == "Firmicutes") %>%
+  filter(Тип == "Firmicutes") %>%
   pull(`Количество прочтений`) %>%
   sum(na.rm = TRUE)
 
 bacteroidota_count <- taxonomy_df %>%
-  filter(Тип == "Bacteroidota" | Тип == "Bacteroidetes") %>%
+  filter(Тип == "Bacteroidota") %>%
   pull(`Количество прочтений`) %>%
   sum(na.rm = TRUE)
 
@@ -48,12 +48,12 @@ firmicutes_bacteroidota_ratio <- ifelse(bacteroidota_count > 0,
 
 # 2. Соотношение Bacteroides fragilis/Faecalibacterium prausnitzii (виды)
 b_fragilis_count <- taxonomy_df %>%
-  filter(Вид == "Bacteroides_fragilis" | Вид == "Bacteroides fragilis") %>%
+  filter(Вид == "Bacteroides_fragilis") %>%
   pull(`Количество прочтений`) %>%
   sum(na.rm = TRUE)
 
 f_prausnitzii_count <- taxonomy_df %>%
-  filter(Вид == "Faecalibacterium_prausnitzii" | Вид == "Faecalibacterium prausnitzii") %>%
+  filter(Вид == "Faecalibacterium_prausnitzii") %>%
   pull(`Количество прочтений`) %>%
   sum(na.rm = TRUE)
 
@@ -100,6 +100,7 @@ total_reads <- sum(counts, na.rm = TRUE)
 # Процент основных типов
 percent_firmicutes <- (firmicutes_count / total_reads) * 100
 percent_bacteroidota <- (bacteroidota_count / total_reads) * 100
+
 percent_actinobacteria <- taxonomy_df %>%
   filter(Тип == "Actinobacteria" | Тип == "Actinomycetota") %>%
   pull(`Количество прочтений`) %>%
