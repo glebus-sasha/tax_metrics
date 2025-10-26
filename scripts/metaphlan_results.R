@@ -24,25 +24,42 @@ metaphlan <- read_tsv(
 ) %>%
   mutate(estimated_number_of_reads_from_the_clade = as.numeric(estimated_number_of_reads_from_the_clade)) %>%
   filter(str_detect(clade_name, "t__")) %>%
-  mutate(clade_taxid = str_extract(clade_taxid, "[0-9]+(?=\\|?$)")) %>% 
   select(clade_taxid, clade_name, estimated_number_of_reads_from_the_clade, relative_abundance) %>%
+  # Разделяем таксономию и taxid по уровням
   separate(
     clade_name,
-    into = c("kingdom", "phylum", "class", "order", "family", "genus", "species", "sgb"),
+    into = c("kingdom", "phylum", "class", "order", "family", "genus", "species", "strain"),
     sep = "\\|",
     fill = "right"
   ) %>%
+  separate(
+    clade_taxid,
+    into = c("kingdom_taxid", "phylum_taxid", "class_taxid", "order_taxid", "family_taxid", "genus_taxid", "species_taxid", "strain_taxid"),
+    sep = "\\|",
+    fill = "right"
+  ) %>%
+  # Удаляем префиксы из названий таксонов
   mutate(across(
-    .cols = kingdom:sgb,
-    .fns = ~ str_remove(.x, "^[a-z]__")  # удаляет префиксы вроде k__, p__, t__ и т.д.
+    .cols = kingdom:strain,
+    .fns = ~ str_remove(.x, "^[a-z]__")
   )) %>%
+  # Заменяем пустые значения на NA
+  mutate(across(
+    .cols = kingdom:strain,
+    .fns = ~ ifelse(.x == "" | is.na(.x), NA, .x)
+  )) %>%
+  mutate(across(
+    .cols = kingdom_taxid:strain_taxid,
+    .fns = ~ ifelse(.x == "" | is.na(.x), NA, .x)
+  )) %>%
+  # Пересчитываем относительную abundance
   mutate(
     total_filtered_abundance = sum(estimated_number_of_reads_from_the_clade),
     relative_abundance = (estimated_number_of_reads_from_the_clade / total_filtered_abundance) * 100,
     relative_abundance = round(relative_abundance, 3)
   ) %>% 
+  # Переименовываем столбцы
   rename(
-    taxonomy_id = clade_taxid,
     Царство = kingdom,
     Тип = phylum,
     Класс = class,
@@ -50,11 +67,28 @@ metaphlan <- read_tsv(
     Семейство = family,
     Род = genus,
     Вид = species,
-    SGB = sgb,
     `Количество прочтений` = estimated_number_of_reads_from_the_clade,
     `Относительное содержание %` = relative_abundance
   ) %>% 
-  select(-SGB, -total_filtered_abundance) %>% 
+  # Добавляем taxid для каждого уровня с русскими названиями
+  rename(
+    `TaxID царства` = kingdom_taxid,
+    `TaxID типа` = phylum_taxid,
+    `TaxID класса` = class_taxid,
+    `TaxID порядка` = order_taxid,
+    `TaxID семейства` = family_taxid,
+    `TaxID рода` = genus_taxid,
+    `TaxID вида` = species_taxid
+  ) %>% 
+  # Убираем ненужные столбцы (штамм/MAG и их taxid)
+  select(-strain, -strain_taxid, -total_filtered_abundance) %>% 
+  # Переупорядочиваем столбцы для удобства
+  select(
+   `TaxID царства`, `TaxID типа`, `TaxID класса`, `TaxID порядка`, 
+    `TaxID семейства`, `TaxID рода`, `TaxID вида`,
+    Царство, Тип, Класс, Порядок, Семейство, Род, Вид,
+    `Количество прочтений`, `Относительное содержание %`
+  ) %>% 
   arrange(desc(`Относительное содержание %`))
 
 write_excel_csv2(metaphlan, output_file)
