@@ -4,8 +4,8 @@ suppressPackageStartupMessages({
   library(tidyverse)
 })
 
-# input_file <- 'raw/sample_0_taxonomy.csv'
-# output_file <- 'results/sample_0_taxonomy.csv'
+# input_file <- 'raw/250822_RnD-L_250822_16_Metagenom2_nM12_L00_taxonomy.csv'
+# output_file <- 'results/250822_RnD-L_250822_16_Metagenom2_nM12_L00_taxonomy.csv'
 
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -15,6 +15,9 @@ if (length(args) != 2) {
 
 input_file <- args[1]
 output_file <- args[2]
+
+common_trashold <- 0.5
+virus_trashold <- 0.01
 
 # Чтение данных
 kreport_data <- read_tsv(
@@ -43,24 +46,31 @@ extract_taxon_level <- function(path, level_prefix) {
   }
 }
 
-# Обработка данных
-processed_data <- kreport_data %>%
+# Список вирусных царств
+virus_kingdoms <- c(
+  "Zilligvirae", "Heunggongvirae", "Loebvirae", "Sangervirae",
+  "Shotokuvirae", "Trapavirae", "Orthornaviriae", "Pararnaviriae",
+  "Unassigned", "Helvetiavirae", "Abadenvirae", "Bamfordvirae"
+)
+
+processed_data <- kreport_data %>% 
   # Извлекаем последний таксон (самый специфичный уровень)
-  mutate(last_taxon = map_chr(taxonomy_path, extract_last_taxon)) %>%
+  mutate(last_taxon = map_chr(taxonomy_path, extract_last_taxon)) %>% 
   # Извлекаем отдельные таксономические уровни
   mutate(
     kingdom = map_chr(taxonomy_path, ~extract_taxon_level(.x, "k")),
-    phylum = map_chr(taxonomy_path, ~extract_taxon_level(.x, "p")),
-    class = map_chr(taxonomy_path, ~extract_taxon_level(.x, "c")),
-    order = map_chr(taxonomy_path, ~extract_taxon_level(.x, "o")),
-    family = map_chr(taxonomy_path, ~extract_taxon_level(.x, "f")),
-    genus = map_chr(taxonomy_path, ~extract_taxon_level(.x, "g")),
+    phylum  = map_chr(taxonomy_path, ~extract_taxon_level(.x, "p")),
+    class   = map_chr(taxonomy_path, ~extract_taxon_level(.x, "c")),
+    order   = map_chr(taxonomy_path, ~extract_taxon_level(.x, "o")),
+    family  = map_chr(taxonomy_path, ~extract_taxon_level(.x, "f")),
+    genus   = map_chr(taxonomy_path, ~extract_taxon_level(.x, "g")),
     species = map_chr(taxonomy_path, ~extract_taxon_level(.x, "s"))
-  ) %>%
-  filter(!is.na(species)) %>%
+  ) %>% 
+  filter(!is.na(species)) %>% 
   filter(species != "Homo_sapiens") %>% 
-  mutate(total_reads = sum(reads_count)) %>%
-  mutate(relative_abundance = (reads_count / total_reads) * 100) %>%
+  # Считаем общее количество прочтений
+  mutate(total_reads = sum(reads_count)) %>% 
+  mutate(relative_abundance = (reads_count / total_reads) * 100) %>% 
   mutate(relative_abundance = round(relative_abundance, 3)) %>% 
   select(
     Царство = kingdom,
@@ -72,10 +82,18 @@ processed_data <- kreport_data %>%
     Вид = species,
     `Количество прочтений` = reads_count,
     `Относительное содержание %` = relative_abundance
-  ) %>%
-  mutate(across(everything(), ~replace_na(.x, ""))) %>%
-  filter(`Относительное содержание %` > 0.01) %>% 
+  ) %>% 
+  mutate(across(everything(), ~replace_na(.x, ""))) %>% 
+  # Дифференцированная фильтрация
+  filter(
+    (`Относительное содержание %` > virus_trashold & Царство %in% virus_kingdoms) |
+      (`Относительное содержание %` > common_trashold & !(Царство %in% virus_kingdoms))
+  ) %>% 
+  # Пересчёт относительного содержания после фильтрации
+  mutate(`Относительное содержание %` = (`Количество прочтений` / sum(`Количество прочтений`)) * 100) %>% 
+  mutate(`Относительное содержание %` = round(`Относительное содержание %`, 3)) %>% 
   arrange(desc(`Относительное содержание %`))
+
 
 # Сохраняем результат
 write_excel_csv2(processed_data, output_file)
