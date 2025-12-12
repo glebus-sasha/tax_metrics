@@ -50,7 +50,7 @@ metaphlan <- read_tsv(
   mutate(across(
     .cols = kingdom:strain,
     .fns = ~ ifelse(.x == "" | is.na(.x), NA, .x)
-  )) %>%
+  )) %>% 
   mutate(across(
     .cols = kingdom_taxid:strain_taxid,
     .fns = ~ ifelse(.x == "" | is.na(.x), NA, .x)
