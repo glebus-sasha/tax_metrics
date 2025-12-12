@@ -4,17 +4,17 @@ suppressPackageStartupMessages({
   library(tidyverse)
 })
  
-# metaphlan_file <- 'raw/250822_RnD-L_250822_21_Metagenom1_n17K_L00_profile.txt'
-# output_file <- 'results/250822_RnD-L_250822_21_Metagenom1_n17K_L00_taxonomy.csv'
+metaphlan_file <- 'raw/4P250618038US293240A2_RnDL_250919_11_P61-RDI_n0_L00_profile.txt'
+output_file <- 'results/4P250618038US293240A2_RnDL_250919_11_P61-RDI_n0_L00_taxonomy.csv'
 
-args <- commandArgs(trailingOnly = TRUE)
-
-if (length(args) != 2) {
-  stop("Usage: Rscript metaphlan_results.R <metaphlan_file.tsv> <output_file.csv>")
-}
-
-metaphlan_file <- args[1]
-output_file <- args[2]
+# args <- commandArgs(trailingOnly = TRUE)
+# 
+# if (length(args) != 2) {
+#   stop("Usage: Rscript metaphlan_results.R <metaphlan_file.tsv> <output_file.csv>")
+# }
+# 
+# metaphlan_file <- args[1]
+# output_file <- args[2]
 
 metaphlan <- read_tsv(
   metaphlan_file,
@@ -52,12 +52,6 @@ metaphlan <- read_tsv(
     .cols = kingdom_taxid:strain_taxid,
     .fns = ~ ifelse(.x == "" | is.na(.x), NA, .x)
   )) %>%
-  # Пересчитываем относительную abundance
-  mutate(
-    total_filtered_abundance = sum(estimated_number_of_reads_from_the_clade),
-    relative_abundance = (estimated_number_of_reads_from_the_clade / total_filtered_abundance) * 100,
-    relative_abundance = round(relative_abundance, 3)
-  ) %>% 
   # Переименовываем столбцы
   rename(
     Царство = kingdom,
@@ -67,8 +61,7 @@ metaphlan <- read_tsv(
     Семейство = family,
     Род = genus,
     Вид = species,
-    `Количество прочтений` = estimated_number_of_reads_from_the_clade,
-    `Относительное содержание %` = relative_abundance
+    `Количество прочтений` = estimated_number_of_reads_from_the_clade
   ) %>% 
   # Добавляем taxid для каждого уровня с русскими названиями
   rename(
@@ -81,14 +74,22 @@ metaphlan <- read_tsv(
     `TaxID вида` = species_taxid
   ) %>% 
   # Убираем ненужные столбцы (штамм/MAG и их taxid)
-  select(-strain, -strain_taxid, -total_filtered_abundance) %>% 
-  # Переупорядочиваем столбцы для удобства
-  select(
-   `TaxID царства`, `TaxID типа`, `TaxID класса`, `TaxID порядка`, 
+  select(-strain, -strain_taxid) %>% 
+  group_by(
+    `TaxID царства`, `TaxID типа`, `TaxID класса`, `TaxID порядка`,
     `TaxID семейства`, `TaxID рода`, `TaxID вида`,
-    Царство, Тип, Класс, Порядок, Семейство, Род, Вид,
-    `Количество прочтений`, `Относительное содержание %`
-  ) %>% 
+    Царство, Тип, Класс, Порядок, Семейство, Род, Вид
+  ) %>%
+  summarise(
+    `Количество прочтений` = sum(`Количество прочтений`, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    total_filtered_abundance = sum(`Количество прочтений`),
+    `Относительное содержание %` =
+      round(`Количество прочтений` / total_filtered_abundance * 100, 3)
+  ) %>%
+  select(-total_filtered_abundance) %>% 
   arrange(desc(`Относительное содержание %`))
 
 write_excel_csv2(metaphlan, output_file)
