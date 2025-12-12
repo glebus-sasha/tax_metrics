@@ -1,20 +1,23 @@
 #!/usr/bin/env Rscript
 
 suppressPackageStartupMessages({
-  library(tidyverse)
+  library(dplyr)
+  library(tidyr)
+  library(readr)
+  library(stringr)
 })
  
-metaphlan_file <- 'raw/4P250618038US293240A2_RnDL_250919_11_P61-RDI_n0_L00_profile.txt'
-output_file <- 'results/4P250618038US293240A2_RnDL_250919_11_P61-RDI_n0_L00_taxonomy.csv'
+# metaphlan_file <- 'raw/4P250618038US293240A2_RnDL_250919_11_P61-RDI_n0_L00_profile.txt'
+# output_file <- 'results/4P250618038US293240A2_RnDL_250919_11_P61-RDI_n0_L00_taxonomy.csv'
 
-# args <- commandArgs(trailingOnly = TRUE)
-# 
-# if (length(args) != 2) {
-#   stop("Usage: Rscript metaphlan_results.R <metaphlan_file.tsv> <output_file.csv>")
-# }
-# 
-# metaphlan_file <- args[1]
-# output_file <- args[2]
+args <- commandArgs(trailingOnly = TRUE)
+
+if (length(args) != 2) {
+  stop("Usage: Rscript metaphlan_results.R <metaphlan_file.tsv> <output_file.csv>")
+}
+
+metaphlan_file <- args[1]
+output_file <- args[2]
 
 metaphlan <- read_tsv(
   metaphlan_file,
